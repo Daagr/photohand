@@ -1,0 +1,93 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<style>
+body {
+	background: #707070;
+}
+.thumb {
+	padding: .5em;
+}
+.thumbinfo {
+	position: fixed;
+	top: 0;
+	right: 0;
+	background: #40301060;
+	color: #001030;
+	margin: .5em;
+	width: 15em;
+	padding: .5em;
+	line-height: 2em;
+}
+.infoline {
+	background: #906050b0;
+	margin: .3em;
+}
+.imgcont {
+	margin: 3em;
+}
+</style>
+<script src="vue.js"></script>
+<script src="axios.min.js"></script>
+
+<title>Photohand</title>
+</head>
+<body>
+<div id="app">
+
+<div class="thumbinfo" v-show="info.visible">
+<span class="infoline">
+{{info.Path}}
+</span>
+<span class="infoline" v-if="info.F">
+F={{info.F}}
+</span>
+<span class="infoline" v-if="info.Time">
+T={{info.Time}} <!-- TODO: fraction -->
+</span>
+<span class="infoline" v-if="info.ISO">
+ISO={{info.ISO}}
+</span>
+</div>
+
+<div class="imgcont" v-if="imgs && imgs.length">
+<span v-for="img of imgs">
+<img class="thumb" :src="thumbUrl(img.Uuid)" v-on:mouseleave="info={}" v-on:mouseover="setinfo(img)"></img>
+</span>
+</div>
+
+</div>
+</body>
+
+<script>
+var app = new Vue({
+  el: '#app',
+  created: function(){
+  	this.fetch()
+  },
+  data: {
+    imgs: [],
+    info: {},
+  },
+  methods: {
+  	fetch: function(){
+  		axios.get("list").then(response => {
+  			this.imgs = response.data;
+  		}).catch(error => {
+  			console.log("Faild")
+  		});
+  	},
+  	thumbUrl: function(id){
+  		return "thumb/"+id;
+  	},
+  	hover: function(inf){
+  		console.log(inf);
+  	},
+  	setinfo: function(img){
+  		app.info = img;
+  		app.info.visible = true;
+  	}
+  },
+});
+</script>
+</html>
