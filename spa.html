@@ -22,6 +22,7 @@ body {
 .infoline {
 	background: #906050b0;
 	margin: .3em;
+	white-space: nowrap;
 }
 .imgcont {
 	margin: 3em;
@@ -32,6 +33,7 @@ body {
 	left: 0;
 	margin: .5em;
 	font-size: 2em;
+	color: rgba(0,0,0,.15);
 }
 .selectors {
 	position: fixed;
@@ -75,11 +77,11 @@ body {
 </span>
 </div>
 
-<div class="hamburger" @click="showselectors=!showselectors">
+<div class="hamburger" @click="hamcount=1;hamin();showselectors=true" @mouseover="hamin()" @mouseleave="hamhover=false">
 🍔
 </div>
 
-<div class="selectors" v-show="showselectors">
+<div class="selectors" v-show="showselectors" @mouseover="hamin()" @mouseleave="hamhover=false">
 <div class="selector">
 👍
 <select v-model="filters.ratingf">
@@ -160,6 +162,9 @@ var app = new Vue({
     	rating: 0,
     	ratingf: ">",
     },
+    hamhover: false,
+    hamticking: false,
+    hamcount: 0,
   },
   methods: {
   	fetch: function(){
@@ -189,6 +194,32 @@ var app = new Vue({
   	clicked: function(img){
   		console.log("Clicked");
   	},
+  	hamin: function(){
+  		app.hamhover = true;
+  		if(!app.hamticking){
+  			app.hamticking = true;
+  			app.hamtick();
+  		}
+  	},
+  	hamtick: function(){
+  		if(app.hamhover){
+  			app.hamcount += .1;
+  			if(app.hamcount > 1){
+  				app.hamcount = 1;
+  				app.showselectors = true;
+  			}
+  		}else{
+  			app.hamcount -= .035;
+  			if(app.hamcount < 0){
+  				app.hamcount = 0;
+  				app.showselectors = false;
+  				app.hamticking = false;
+  				return;
+  			}
+  		}
+  		document.getElementsByClassName("hamburger")[0].style.color = "rgba(0, 0, 0, "+Math.max(app.hamcount, .15)+")";
+  		setTimeout(app.hamtick, 50);
+  	},
   	recycled: function(){
   		var queryopts={};
   		var filts = this.filters;
@@ -204,7 +235,6 @@ var app = new Vue({
    		if(filts.timef!=""){
    			queryopts.time = filts.timef + filts.time;
    		}
-  		console.log(queryopts);
   		axios.get("list", {params: queryopts}).then(response => {
   			this.imgs = response.data;
   		}).catch(error => {
