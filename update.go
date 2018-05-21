@@ -28,6 +28,7 @@ type Ph struct {
 	Orientation       string
 	Camera, Lens      string
 	DateTime          string
+	Rating            int
 }
 
 var db *sql.DB
@@ -79,7 +80,7 @@ func Init(conf ...Conf) {
 
 func InitDb() {
 	db.Exec(`
-	CREATE TABLE IF NOT EXISTS photos(uuid, path, filename, width, height, artist, copyright, f, iso, time, exposurebias, focallength, orientation, camera, lens, datetime);
+	CREATE TABLE IF NOT EXISTS photos(uuid, path, filename, width, height, artist, copyright, f, iso, time, exposurebias, focallength, orientation, camera, lens, datetime, rating);
 	`)
 }
 
@@ -98,14 +99,14 @@ func fraction(s string) float32 {
 func scanPh(r *sql.Rows) (p Ph, err error) {
 	err = r.Scan(&p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
 		&p.F, &p.ISO, &p.Time, &p.ExposureBias, &p.FocalLength, &p.Orientation,
-		&p.Camera, &p.Lens, &p.DateTime)
+		&p.Camera, &p.Lens, &p.DateTime, &p.Rating)
 	return p, err
 }
 
 func scanPhRow(r *sql.Row) (p Ph, err error) {
 	err = r.Scan(&p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
 		&p.F, &p.ISO, &p.Time, &p.ExposureBias, &p.FocalLength, &p.Orientation,
-		&p.Camera, &p.Lens, &p.DateTime)
+		&p.Camera, &p.Lens, &p.DateTime, &p.Rating)
 	return p, err
 }
 
@@ -217,7 +218,6 @@ func AddInfo(ph Ph) {
 		if v, err := strconv.Atoi(strings.TrimSpace(datum.String())); err == nil {
 			ph.ISO = v
 		}
-		//ph.ISO = strings.TrimSpace(datum.String())
 	}
 
 	datum, _ = data.FindKey("Exif.Photo.ExposureTime")
@@ -249,15 +249,14 @@ func AddInfo(ph Ph) {
 	ph.Uuid = uuid.Must(uuid.NewV4()).String()
 
 	_, err = db.Exec(
-		"INSERT INTO photos VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO photos VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		ph.Uuid, ph.Path, ph.Filename, ph.Width, ph.Height, ph.Artist, ph.Copyright,
 		ph.F, ph.ISO, ph.Time, ph.ExposureBias, ph.FocalLength, ph.Orientation,
-		ph.Camera, ph.Lens, ph.DateTime)
+		ph.Camera, ph.Lens, ph.DateTime, ph.Rating)
 
 	if err != nil {
 		log.Fatalln("While adding a photo:", err)
 	}
-	//log.Println(ph)
 }
 
 func Update() {

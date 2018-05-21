@@ -88,7 +88,10 @@ func Serve(host, path string) {
 		formnum("focallength")
 		formnum("width")
 		formnum("height")
+		formnum("rating")
 		// phs, err := QueryPhs("SELECT * FROM photos")
+		log.Println(query.String())
+		log.Println(queryargs...)
 		phs, err := QueryPhs(query.String(), queryargs...)
 		if err != nil {
 			errr(w, r, err)
@@ -107,6 +110,20 @@ func Serve(host, path string) {
 			errr(w, r, err)
 			return
 		}
+	})
+
+	app.HandleFunc(pat.Get("/rate/:id/:num"), func(w http.ResponseWriter, r *http.Request) {
+		uuid := pat.Param(r, "id")
+		num, err := strconv.Atoi(pat.Param(r, "num"))
+		if err != nil {
+			errr(w, r, err)
+			return
+		}
+		_, err = db.Exec("UPDATE photos SET rating = ? WHERE uuid = ?", num, uuid)
+		if err != nil {
+			errr(w, r, err)
+		}
+		fmt.Fprintln(w, "{}")
 	})
 
 	app.HandleFunc(pat.Get("/thumb/:id"), func(w http.ResponseWriter, r *http.Request) {

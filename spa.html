@@ -26,6 +26,28 @@ body {
 .imgcont {
 	margin: 3em;
 }
+.hamburger {
+	position: fixed;
+	top: 0;
+	left: 0;
+	margin: .5em;
+	font-size: 2em;
+}
+.selectors {
+	position: fixed;
+	top: 2em;
+	left: 2em;
+	padding: .5em;
+	background: #50607090;
+	color: #301010;
+}
+.numselect {
+	width: 4em;
+}
+.recycle {
+	font-size: 1.5em;
+	text-align: right;
+}
 </style>
 <script src="vue.js"></script>
 <script src="axios.min.js"></script>
@@ -40,19 +62,75 @@ body {
 {{info.Path}}
 </span>
 <span class="infoline" v-if="info.F">
-F={{info.F}}
+👁{{info.F}}
 </span>
 <span class="infoline" v-if="info.Time">
-T={{info.Time}} <!-- TODO: fraction -->
+⌛{{info.Time}}s <!-- TODO: fraction -->
 </span>
 <span class="infoline" v-if="info.ISO">
-ISO={{info.ISO}}
+📼{{info.ISO}}
 </span>
+<span class="infoline" v-if="info.Rating">
+👍{{info.Rating}}
+</span>
+</div>
+
+<div class="hamburger" @click="showselectors=!showselectors">
+🍔
+</div>
+
+<div class="selectors" v-show="showselectors">
+<div class="selector">
+👍
+<select v-model="filters.ratingf">
+<option value="">🤷</option>
+<option value="<">≤</option>
+<option value="=">=</option>
+<option value=">">≥</option>
+</select>
+<input v-model.number.lazy="filters.rating" class="numselect" type="number" value=0 step=1></input>
+</div>
+<div class="selector">
+👁
+<select v-model="filters.ff">
+<option value="">🤷</option>
+<option value="<">≤</option>
+<option value="=">=</option>
+<option value=">">≥</option>
+</select>
+<input v-model.number.lazy="filters.f" class="numselect" type="number" value=5 step=0.1></input>
+</div>
+<div class="selector">
+📼
+<select v-model="filters.isof">
+<option value="">🤷</option>
+<option value="<">≤</option>
+<option value="=">=</option>
+<option value=">">≥</option>
+</select>
+<input v-model.number.lazy="filters.iso" class="numselect" type="number" value=1000 step=100></input>
+</div>
+<div class="selector">
+⌛
+<select v-model="filters.timef">
+<option value="">🤷</option>
+<option value="<">≤</option>
+<option value="=">=</option>
+<option value=">">≥</option>
+</select>
+<!-- TODO fraction? step? -->
+<input v-model.number.lazy="filters.time" class="numselect" type="number" value=5 step=0.001></input>
+</div>
+
+<div class="recycle">
+<input type="button" value="♻" @click="recycled"></input>
+</div>
+
 </div>
 
 <div class="imgcont" v-if="imgs && imgs.length">
 <span v-for="img of imgs">
-<img class="thumb" :src="thumbUrl(img.Uuid)" v-on:mouseleave="info={}" v-on:mouseover="setinfo(img)"></img>
+<img class="thumb" :src="thumbUrl(img.Uuid)" v-on:mouseleave="info={}" v-on:mouseover="setinfo(img)" @click="clicked(img)" @input="keyp"></img>
 </span>
 </div>
 
@@ -60,32 +138,78 @@ ISO={{info.ISO}}
 </body>
 
 <script>
+Vue.config.keyCodes.plus = 43;
+Vue.config.keyCodes.minus = 45;
 var app = new Vue({
   el: '#app',
   created: function(){
-  	this.fetch()
+  	this.fetch();
+  	window.addEventListener('keydown',this.keyp);
   },
   data: {
     imgs: [],
     info: {},
+    showselectors: false,
+    filters: {
+    	f: 5,
+    	ff: "",
+    	iso: 1000,
+    	isof: "",
+    	time: 0.1,
+    	timef: "",
+    	rating: 0,
+    	ratingf: ">",
+    },
   },
   methods: {
   	fetch: function(){
-  		axios.get("list").then(response => {
-  			this.imgs = response.data;
-  		}).catch(error => {
-  			console.log("Faild")
-  		});
+  		this.recycled();
+  	},
+  	keyp: function(event){
+  		if(app.info && app.info.visible){
+	  		if(event.key == "+"){
+	  			app.changeRating(app.info, +1);
+	  		}else if(event.key == "-"){
+	  			app.changeRating(app.info, -1);
+	  		}
+  		}
+  	},
+  	changeRating: function(img, change){
+  		console.log("ChangeRating " + change);
+  		img.Rating += change;
+  		axios.get("rate/"+img.Uuid+"/"+img.Rating);
   	},
   	thumbUrl: function(id){
   		return "thumb/"+id;
   	},
-  	hover: function(inf){
-  		console.log(inf);
-  	},
   	setinfo: function(img){
   		app.info = img;
   		app.info.visible = true;
+  	},
+  	clicked: function(img){
+  		console.log("Clicked");
+  	},
+  	recycled: function(){
+  		var queryopts={};
+  		var filts = this.filters;
+  		if(filts.ratingf!=""){
+  			queryopts.rating = filts.ratingf + filts.rating;
+  		}
+  		if(filts.ff!=""){
+   			queryopts.f = filts.ff + filts.f;
+   		}
+   		if(filts.isof!=""){
+   			queryopts.iso = filts.isof + filts.iso;
+   		}
+   		if(filts.timef!=""){
+   			queryopts.time = filts.timef + filts.time;
+   		}
+  		console.log(queryopts);
+  		axios.get("list", {params: queryopts}).then(response => {
+  			this.imgs = response.data;
+  		}).catch(error => {
+  			console.log("Fale");
+  		})
   	}
   },
 });
