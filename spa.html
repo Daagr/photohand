@@ -18,6 +18,13 @@ body {
 	width: 15em;
 	padding: .5em;
 	line-height: 2em;
+	z-index: 10;
+}
+.mid {
+	position: fixed;
+	width: 75%;
+	height: 100%;
+	text-align: center;
 }
 .infoline {
 	background: #906050b0;
@@ -34,6 +41,7 @@ body {
 	margin: .5em;
 	font-size: 2em;
 	color: rgba(0,0,0,.15);
+	z-index: 5;
 }
 .selectors {
 	position: fixed;
@@ -42,6 +50,7 @@ body {
 	padding: .5em;
 	background: #50607090;
 	color: #301010;
+	z-index: 6;
 }
 .numselect {
 	width: 4em;
@@ -49,6 +58,21 @@ body {
 .recycle {
 	font-size: 1.5em;
 	text-align: right;
+}
+.thumbs {
+	position: absolute;
+	right: 0;
+	overflow: hidden;
+}
+.midimg {
+	max-width: 95%;
+	max-height: 95%;
+}
+.tools {
+	position: fixed;
+	right: 30%;
+	width: 5%;
+	z-index: 4;
 }
 </style>
 <script src="vue.js"></script>
@@ -130,10 +154,22 @@ body {
 
 </div>
 
+<div class="thumbs">
 <div class="imgcont" v-if="imgs && imgs.length">
 <span v-for="img of imgs">
 <img class="thumb" :src="thumbUrl(img.Uuid)" v-on:mouseleave="info={}" v-on:mouseover="setinfo(img)" @click="clicked(img)" @input="keyp"></img>
 </span>
+</div>
+</div>
+
+<div class="mid" v-show="midmode">
+<img class="midimg" :src="midUrl(midimg.Uuid)"></img>
+</div>
+
+<div class="tools" v-show="midmode">
+<button @click="setmidmode(false)">❌</button>
+<button @click="changeRating(midimg, +1)">👍</button>
+<button @click="changeRating(midimg, -1)">👎</button>
 </div>
 
 </div>
@@ -165,6 +201,8 @@ var app = new Vue({
     hamhover: false,
     hamticking: false,
     hamcount: 0,
+    midmode: false,
+    midimg: {},
   },
   methods: {
   	fetch: function(){
@@ -179,20 +217,32 @@ var app = new Vue({
 	  		}
   		}
   	},
+  	setmidmode: function(on){
+  		if(on){
+  			app.midmode = true;
+  			document.getElementsByClassName("thumbs")[0].style.width = "33%";
+  		}else{
+  			app.midmode = false;
+  			document.getElementsByClassName("thumbs")[0].style.width = "100%";
+  		}
+  	},
   	changeRating: function(img, change){
-  		console.log("ChangeRating " + change);
   		img.Rating += change;
   		axios.get("rate/"+img.Uuid+"/"+img.Rating);
   	},
   	thumbUrl: function(id){
   		return "thumb/"+id;
   	},
+  	midUrl: function(id){
+  		return "mid/"+id;
+  	},
   	setinfo: function(img){
   		app.info = img;
   		app.info.visible = true;
   	},
   	clicked: function(img){
-  		console.log("Clicked");
+  		app.setmidmode(true);
+  		app.midimg = img;
   	},
   	hamin: function(){
   		app.hamhover = true;
