@@ -76,6 +76,9 @@ func Init(conf ...Conf) {
 	}
 	db = db_
 	InitDb()
+
+	// TODO: make sure paths exist
+	// TODO: Update
 }
 
 func InitDb() {

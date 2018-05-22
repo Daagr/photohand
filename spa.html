@@ -101,7 +101,7 @@ body {
 </span>
 </div>
 
-<div class="hamburger" @click="hamcount=1;hamin();showselectors=true" @mouseover="hamin()" @mouseleave="hamhover=false">
+<div class="hamburger" @click="hamcount=1;hamin();showselectors=true" @mouseover="hamin()" @mouseleave="hamhover=false" v-show="!midmode">
 🍔
 </div>
 
@@ -157,13 +157,13 @@ body {
 <div class="thumbs">
 <div class="imgcont" v-if="imgs && imgs.length">
 <span v-for="img of imgs">
-<img class="thumb" :src="thumbUrl(img.Uuid)" v-on:mouseleave="info={}" v-on:mouseover="setinfo(img)" @click="clicked(img)" @input="keyp"></img>
+<img :id="img.Uuid" class="thumb" :src="thumbUrl(img.Uuid)" v-on:mouseleave="info={}" v-on:mouseover="setinfo(img)" @click="clicked(img)" @input="keyp"></img>
 </span>
 </div>
 </div>
 
 <div class="mid" v-show="midmode">
-<img class="midimg" :src="midUrl(midimg.Uuid)"></img>
+<img class="midimg" :src="midUrl(midimg.Uuid)" @mouseleave="info={}" @mouseover="setinfo(midimg)" @input="keyp"></img>
 </div>
 
 <div class="tools" v-show="midmode">
@@ -220,10 +220,16 @@ var app = new Vue({
   	setmidmode: function(on){
   		if(on){
   			app.midmode = true;
+  			app.hamhover = false;
+  			app.hamcount = 0;
+  			app.showselectors = false;
+	  		document.getElementsByClassName("hamburger")[0].style.color = "rgba(0, 0, 0, .15)";
   			document.getElementsByClassName("thumbs")[0].style.width = "33%";
+  			document.location.hash = app.midimg.Uuid;
   		}else{
   			app.midmode = false;
   			document.getElementsByClassName("thumbs")[0].style.width = "100%";
+  			setTimeout(function(){document.location.hash = app.midimg.Uuid;}, 20);
   		}
   	},
   	changeRating: function(img, change){
@@ -241,8 +247,8 @@ var app = new Vue({
   		app.info.visible = true;
   	},
   	clicked: function(img){
-  		app.setmidmode(true);
   		app.midimg = img;
+  		app.setmidmode(true);
   	},
   	hamin: function(){
   		app.hamhover = true;
