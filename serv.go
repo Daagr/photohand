@@ -52,6 +52,16 @@ func Serve(host, path string) {
 		var query strings.Builder
 		query.WriteString("SELECT * FROM photos WHERE 1 = 1 ")
 		queryargs := make([]interface{}, 0)
+		formstr := func(name string) {
+			v := r.FormValue(name)
+			if v == "" {
+				return
+			}
+			query.WriteString(" AND ")
+			query.WriteString(name)
+			query.WriteString(" = ? ")
+			queryargs = append(queryargs, v)
+		}
 		formnum := func(name string) {
 			v := r.FormValue(name)
 			if v == "" {
@@ -89,6 +99,7 @@ func Serve(host, path string) {
 		formnum("width")
 		formnum("height")
 		formnum("rating")
+		formstr("ext")
 		// phs, err := QueryPhs("SELECT * FROM photos")
 		log.Println(query.String())
 		log.Println(queryargs...)

@@ -7,6 +7,8 @@ body {
 }
 .thumb {
 	padding: .5em;
+	height: 200px;
+	min-width: 100px;
 }
 .thumbinfo {
 	position: fixed;
@@ -55,6 +57,9 @@ body {
 .numselect {
 	width: 4em;
 }
+.textfilt {
+	width: 4em;
+}
 .recycle {
 	font-size: 1.5em;
 	text-align: right;
@@ -94,10 +99,13 @@ body {
 ⌛{{info.Time}}s <!-- TODO: fraction -->
 </span>
 <span class="infoline" v-if="info.ISO">
-📼{{info.ISO}}
+🎞{{info.ISO}}
 </span>
 <span class="infoline" v-if="info.Rating">
 👍{{info.Rating}}
+</span>
+<span class="infoline" v-if="info.FocalLength">
+🔭{{info.FocalLength}}
 </span>
 </div>
 
@@ -127,7 +135,7 @@ body {
 <input v-model.number.lazy="filters.f" class="numselect" type="number" value=5 step=0.1></input>
 </div>
 <div class="selector">
-📼
+🎞
 <select v-model="filters.isof">
 <option value="">🤷</option>
 <option value="<">≤</option>
@@ -146,6 +154,22 @@ body {
 </select>
 <!-- TODO fraction? step? -->
 <input v-model.number.lazy="filters.time" class="numselect" type="number" value=5 step=0.001></input>
+</div>
+<div class="selector">
+🔚
+<input v-model="filters.ext" class="textfilt">
+</input>
+</div>
+<div class="selector">
+🔭
+<select v-model="filters.focalf">
+<option value="">🤷</option>
+<option value="<">≤</option>
+<option value="=">=</option>
+<option value=">">≥</option>
+</select>
+<input v-model="filters.focal" class="numselect" type="number" value=50 step=1>
+</input>
 </div>
 
 <div class="recycle">
@@ -197,6 +221,9 @@ var app = new Vue({
     	timef: "",
     	rating: 0,
     	ratingf: ">",
+    	ext: "",
+    	focal: 50,
+    	focalf: "",
     },
     hamhover: false,
     hamticking: false,
@@ -276,6 +303,9 @@ var app = new Vue({
   		document.getElementsByClassName("hamburger")[0].style.color = "rgba(0, 0, 0, "+Math.max(app.hamcount, .15)+")";
   		setTimeout(app.hamtick, 50);
   	},
+  	imgwidth: function(img){
+  		return 200*img.Width/img.Height;
+  	},
   	recycled: function(){
   		var queryopts={};
   		var filts = this.filters;
@@ -290,6 +320,12 @@ var app = new Vue({
    		}
    		if(filts.timef!=""){
    			queryopts.time = filts.timef + filts.time;
+   		}
+   		if(filts.ext!=""){
+   			queryopts.ext = filts.ext;
+   		}
+   		if(filts.focalf!=""){
+   			queryopts.focallength = filts.focalf + filts.focal;
    		}
   		axios.get("list", {params: queryopts}).then(response => {
   			this.imgs = response.data;

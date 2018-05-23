@@ -29,6 +29,7 @@ type Ph struct {
 	Camera, Lens      string
 	DateTime          string
 	Rating            int
+	Ext               string
 }
 
 var db *sql.DB
@@ -70,20 +71,21 @@ func Init(conf ...Conf) {
 		log.Fatalln("TODO picsdir to ~/Pictures")
 	}
 	//log.Println("p:", picsdir, "d:", datadir)
+
+	err := os.MkdirAll(filepath.Join(datadir, "thumbs"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(datadir, "mids"), os.ModePerm)
 	db_, err := sql.Open("sqlite3", filepath.Join(datadir, "db.db"))
 	if err != nil {
 		log.Fatal("Failed to open db", err)
 	}
 	db = db_
 	InitDb()
-
-	// TODO: make sure paths exist
-	// TODO: Update
+	Update()
 }
 
 func InitDb() {
 	db.Exec(`
-	CREATE TABLE IF NOT EXISTS photos(uuid, path, filename, width, height, artist, copyright, f, iso, time, exposurebias, focallength, orientation, camera, lens, datetime, rating);
+	CREATE TABLE IF NOT EXISTS photos(uuid, path, filename, width, height, artist, copyright, f, iso, time, exposurebias, focallength, orientation, camera, lens, datetime, rating, ext);
 	`)
 }
 
@@ -102,14 +104,14 @@ func fraction(s string) float32 {
 func scanPh(r *sql.Rows) (p Ph, err error) {
 	err = r.Scan(&p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
 		&p.F, &p.ISO, &p.Time, &p.ExposureBias, &p.FocalLength, &p.Orientation,
-		&p.Camera, &p.Lens, &p.DateTime, &p.Rating)
+		&p.Camera, &p.Lens, &p.DateTime, &p.Rating, &p.Ext)
 	return p, err
 }
 
 func scanPhRow(r *sql.Row) (p Ph, err error) {
 	err = r.Scan(&p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
 		&p.F, &p.ISO, &p.Time, &p.ExposureBias, &p.FocalLength, &p.Orientation,
-		&p.Camera, &p.Lens, &p.DateTime, &p.Rating)
+		&p.Camera, &p.Lens, &p.DateTime, &p.Rating, &p.Ext)
 	return p, err
 }
 
@@ -143,6 +145,9 @@ func AddInfo(ph Ph) {
 	if err != sql.ErrNoRows {
 		return
 	}
+
+	ph.Ext = strings.TrimLeft(strings.ToLower(filepath.Ext(ph.Path)), ".")
+
 	img, err := goexiv.Open(ph.Path)
 	if err != nil {
 		log.Println("Error while opening", ph.Path, err)
@@ -249,13 +254,16 @@ func AddInfo(ph Ph) {
 		ph.DateTime = strings.TrimSpace(datum.String())
 	}
 
+	// TODO: FocusDistance
+	// TODO: some rotated images give opposite height/width
+
 	ph.Uuid = uuid.Must(uuid.NewV4()).String()
 
 	_, err = db.Exec(
-		"INSERT INTO photos VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO photos VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		ph.Uuid, ph.Path, ph.Filename, ph.Width, ph.Height, ph.Artist, ph.Copyright,
 		ph.F, ph.ISO, ph.Time, ph.ExposureBias, ph.FocalLength, ph.Orientation,
-		ph.Camera, ph.Lens, ph.DateTime, ph.Rating)
+		ph.Camera, ph.Lens, ph.DateTime, ph.Rating, ph.Ext)
 
 	if err != nil {
 		log.Fatalln("While adding a photo:", err)
@@ -295,6 +303,17 @@ func CreateScaled(uuid string, filename string, targetheight uint) error {
 	defer func() {
 		<-resizes
 	}()
+
+	// Make sure the file doesn't exist (for example created while waiting)
+	_, err := os.Stat(filename)
+	if err != nil {
+		return nil
+	}
+	if !os.IsExist(err) {
+		log.Println("Unexpected error while checking file existence")
+		return err
+	}
+
 	p, err := QueryPh("SELECT * FROM photos WHERE uuid = ?", uuid)
 	if err != nil {
 		log.Println("No image with id", uuid, "while trying to rescale it")
