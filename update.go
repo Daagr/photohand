@@ -16,6 +16,7 @@ import (
 )
 
 type Ph struct {
+	Num               int
 	Uuid              string
 	Path, Filename    string
 	Width, Height     int
@@ -85,7 +86,7 @@ func Init(conf ...Conf) {
 
 func InitDb() {
 	db.Exec(`
-	CREATE TABLE IF NOT EXISTS photos(uuid, path, filename, width, height, artist, copyright, f, iso, time, exposurebias, focallength, orientation, camera, lens, datetime, rating, ext);
+	CREATE TABLE IF NOT EXISTS photos(num INTEGER PRIMARY KEY, uuid, path, filename, width, height, artist, copyright, f, iso, time, exposurebias, focallength, orientation, camera, lens, datetime, rating, ext);
 	`)
 }
 
@@ -102,14 +103,14 @@ func fraction(s string) float32 {
 }
 
 func scanPh(r *sql.Rows) (p Ph, err error) {
-	err = r.Scan(&p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
+	err = r.Scan(&p.Num, &p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
 		&p.F, &p.ISO, &p.Time, &p.ExposureBias, &p.FocalLength, &p.Orientation,
 		&p.Camera, &p.Lens, &p.DateTime, &p.Rating, &p.Ext)
 	return p, err
 }
 
 func scanPhRow(r *sql.Row) (p Ph, err error) {
-	err = r.Scan(&p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
+	err = r.Scan(&p.Num, &p.Uuid, &p.Path, &p.Filename, &p.Width, &p.Height, &p.Artist, &p.Copyright,
 		&p.F, &p.ISO, &p.Time, &p.ExposureBias, &p.FocalLength, &p.Orientation,
 		&p.Camera, &p.Lens, &p.DateTime, &p.Rating, &p.Ext)
 	return p, err
@@ -260,7 +261,7 @@ func AddInfo(ph Ph) {
 	ph.Uuid = uuid.Must(uuid.NewV4()).String()
 
 	_, err = db.Exec(
-		"INSERT INTO photos VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO photos(uuid, path, filename, width, height, artist, copyright, f, iso, time, exposurebias, focallength, orientation, camera, lens, datetime, rating, ext) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		ph.Uuid, ph.Path, ph.Filename, ph.Width, ph.Height, ph.Artist, ph.Copyright,
 		ph.F, ph.ISO, ph.Time, ph.ExposureBias, ph.FocalLength, ph.Orientation,
 		ph.Camera, ph.Lens, ph.DateTime, ph.Rating, ph.Ext)
@@ -306,10 +307,10 @@ func CreateScaled(uuid string, filename string, targetheight uint) error {
 
 	// Make sure the file doesn't exist (for example created while waiting)
 	_, err := os.Stat(filename)
-	if err != nil {
+	if err == nil {
 		return nil
 	}
-	if !os.IsExist(err) {
+	if !os.IsNotExist(err) {
 		log.Println("Unexpected error while checking file existence")
 		return err
 	}
@@ -336,6 +337,8 @@ func CreateScaled(uuid string, filename string, targetheight uint) error {
 		nwidth = 2 * targetheight
 	}
 	// log.Println(height, width, nwidth)
+
+	// TODO: mayby store size ratio
 
 	err = mw.ThumbnailImage(nwidth, targetheight)
 	if err != nil {

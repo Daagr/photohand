@@ -123,6 +123,8 @@ func Serve(host, path string) {
 		}
 	})
 
+	// TODO: select distinct ext from photos
+
 	app.HandleFunc(pat.Get("/rate/:id/:num"), func(w http.ResponseWriter, r *http.Request) {
 		uuid := pat.Param(r, "id")
 		num, err := strconv.Atoi(pat.Param(r, "num"))

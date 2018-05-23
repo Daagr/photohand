@@ -33,6 +33,10 @@ body {
 	margin: .3em;
 	white-space: nowrap;
 }
+.infostr {
+	background: #906050b0;
+	margin: .3em;
+}
 .imgcont {
 	margin: 3em;
 }
@@ -89,7 +93,7 @@ body {
 <div id="app">
 
 <div class="thumbinfo" v-show="info.visible">
-<span class="infoline">
+<span class="infostr">
 {{info.Path}}
 </span>
 <span class="infoline" v-if="info.F">
@@ -114,6 +118,9 @@ body {
 </div>
 
 <div class="selectors" v-show="showselectors" @mouseover="hamin()" @mouseleave="hamhover=false">
+<div>
+Showing {{imgs.length}} of {{imgs.length}} images
+</div>
 <div class="selector">
 👍
 <select v-model="filters.ratingf">
@@ -210,6 +217,7 @@ var app = new Vue({
   },
   data: {
     imgs: [],
+    allimgs: [],
     info: {},
     showselectors: false,
     filters: {
@@ -233,6 +241,8 @@ var app = new Vue({
   },
   methods: {
   	fetch: function(){
+  		// TODO: mayby just do manual (absolute) positioning of photos
+  		// and check window.scrollY which should be loaded
   		this.recycled();
   	},
   	keyp: function(event){
@@ -327,6 +337,7 @@ var app = new Vue({
    		if(filts.focalf!=""){
    			queryopts.focallength = filts.focalf + filts.focal;
    		}
+   		// TODO: folder
   		axios.get("list", {params: queryopts}).then(response => {
   			this.imgs = response.data;
   		}).catch(error => {
